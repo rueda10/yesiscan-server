@@ -1,0 +1,16 @@
+{
+  "name": "yesiscan-server",
+  "version": "0.0.0",
+  "description": "Yes I Scan backend",
+  "author": "Jaime Rueda",
+  "private": true,
+  "main": "node_modules/expo/AppEntry.js",
+  "scripts": {
+    "start": "node server"
+  },
+  "dependencies": {
+    "body-parser": "^1.17.2",
+    "express": "^4.15.4",
+    "mongoose": "^4.11.6"
+  }
+}
