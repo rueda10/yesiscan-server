@@ -1,9 +1,7 @@
 const express = require('express');
 const _ = require('lodash');
 
-const User = require('../models/User');
-const List = require('../models/List');
-const ListItem = require('../models/ListItem');
+const db = require('../models');
 
 const router = express.Router();
 
@@ -11,36 +9,42 @@ const router = express.Router();
  ****** USER ROUTES ******
  *************************/
 router.get('/api/users/:id', function(req, res) {
-    const _id = req.params.id;
+    const where = {
+        id: req.params.id
+    };
 
-    User.find({ _id }).exec(function(err, doc) {
-        if (err) {
-            console.log(err);
+    db.user.findOne({ where }).then(user => {
+        if (user) {
+            res.json(user);
         } else {
-            res.send(doc);
+            res.json({ error: 'NOT_FOUND' });
         }
+    }).catch(err => {
+        res.json({ error: 'NOT_FOUND' });
     });
 });
 
 router.post('/api/users', function(req, res) {
-    const facebook_id = req.body.facebook_id;
+    const where = {
+        facebook_id: req.body.facebook_id
+    }
 
-    User.findOne({ facebook_id }).exec(function(err, doc) {
-        if (err) {
-            res.send('');
+    db.user.findOne({ where }).then(user => {
+        if (user) {
+            res.json({ id: user.id });
         } else {
-            if (doc) {
-                res.send(doc._id);
-            } else {
-                User.create({ facebook_id }, function(err, doc) {
-                    if (err) {
-                        res.send('');
-                    } else {
-                        res.send(doc._id);
-                    }
-                });
-            }
+            db.user.create({ facebook_id: req.body.facebook_id }).then(user => {
+                if (user) {
+                    res.json({ id: user.id });
+                } else {
+                    res.json({ error: 'NOT_CREATED' });
+                }
+            }).catch(err => {
+                res.json({ error: 'NOT_CREATED' });
+            });
         }
+    }).catch(err => {
+        res.json({ error: 'NOT_FOUND' });
     });
 });
 
@@ -48,168 +52,182 @@ router.post('/api/users', function(req, res) {
  ****** LIST ROUTES ******
  *************************/
 router.get('/api/users/:id/lists', function(req, res) {
-    const _id = req.params.id;
+    const where = {
+        userId: req.params.id
+    }
 
-    User.findOne({ _id }).populate('lists').exec(function(err, doc) {
-        if (err) {
-            res.send('');
+    db.list.findAll({ where }).then(lists => {
+        if (lists) {
+            res.json(lists);
         } else {
-            res.send(doc.lists);
+            res.json({ error: 'NOT_FOUND '});
         }
+    }).catch(err => {
+        res.json({ error: 'NOT_FOUND' });
     });
 });
 
 router.get('/api/users/lists/:id', function(req, res) {
-    const _id = req.params.id;
+    const where = {
+        id: req.params.id
+    }
 
-    List.findOne({ _id }).populate('items').exec(function(err, doc) {
-        if (err) {
-            res.send('');
+    db.list.findOne({ where }).then(list => {
+        if (list) {
+            res.json(list);
         } else {
-            res.send(doc);
+            res.json({ error: 'NOT_FOUND '});
         }
+    }).catch(err => {
+        res.json({ error: 'NOT_FOUND' });
     });
 });
 
 router.post('/api/users/:id/lists', function(req, res) {
-    const _id = req.params.id;
+    const userId = req.params.id;
     const name = req.body.name;
 
-    User.findOne({ _id }, function(err, user) {
-        if (err) {
-            res.send('');
+    db.list.create({ name, userId }).then(list => {
+        if (list) {
+            res.json(list);
         } else {
-            List.create({ name }, function(err, list) {
-                if (err) {
-                    res.send('');
-                } else {
-                    user.lists.push(list);
-                    user.save();
-                    res.send(list);
-                }
-            });
+            res.json({ error: 'NOT_CREATED'});
         }
+    }).catch(err => {
+        res.json({ error: 'NOT_CREATED'});
     });
 });
 
 router.put('/api/users/lists/:id', function(req, res) {
-    const _id = req.params.id;
+    const where = {
+        id: req.params.id
+    }
     const name = req.body.name;
 
-    List.findByIdAndUpdate({ _id }, { $set: { name }}, function(err, doc) {
-        if (err) {
-            res.send('');
+    db.list.findOne({ where }).then(list => {
+        if (list) {
+            list.update({name}).then(newList => {
+                if (newList) {
+                    res.json(newList);
+                } else {
+                    res.json({ error: 'NOT_MODIFIED' });
+                }
+            }).catch(err => {
+                res.json({ error: 'NOT_MODIFIED'});
+            });
         } else {
-            res.send(doc);
+            res.json({ error: 'NOT_FOUND'})
         }
+    }).catch(err => {
+        res.json({ error: 'NOT_FOUND'});
     });
 });
 
 router.delete('/api/users/:user_id/lists/:list_id', function(req, res) {
-    const user_id = req.params.user_id;
-    const list_id = req.params.list_id;
+    const where = {
+        id: req.params.list_id
+    }
 
-    List.findByIdAndRemove({ _id: list_id }, function(err) {
-        if (err) {
-            res.send('');
-        } else {
-            User.findOne({ _id: user_id }).populate('lists').exec(function(err, user) {
-                if (err) {
-                    res.send('');
+    db.list.destroy({ where }).then(list => {
+        if (list) {
+            const where = {
+                userId: req.params.user_id
+            }
+            db.list.findAll({ where }).then(lists => {
+                if (lists) {
+                    res.json(lists);
                 } else {
-                    const index = user.lists.indexOf(list_id);
-                    if (index > -1) {
-                        user.lists.splice(index, 1);
-                    }
-                    user.save();
-                    res.send(user.lists);
+                    res.json({ error: 'NOT_FOUND '});
                 }
+            }).catch(err => {
+                res.json({ error: 'NOT_FOUND' });
             });
+        } else {
+            res.json({ error: 'NOT_DESTROYED' });
         }
+    }).catch(err => {
+        res.json({ error: 'NOT_DESTROYED'});
     });
 });
 
-/******************************
- ****** LIST ITEM ROUTES ******
- ******************************/
+// /******************************
+//  ****** LIST ITEM ROUTES ******
+//  ******************************/
 router.post('/api/users/lists/:id/items', function(req, res) {
-    const _id = req.params.id;
-    const name = req.body.name;
+    const listId = req.params.id;
 
-    List.findOne({ _id }, function(err, list) {
-        if (err) {
-            res.send('');
+    db.item.create(req.body).then(item => {
+        if (item) {
+            res.json(item);
         } else {
-            ListItem.create({ name }, function(err, listItem) {
-                if (err) {
-                    res.send('');
-                } else {
-                    list.items.push(listItem);
-                    list.save();
-                    res.send(listItem);
-                }
-            });
+            res.json({ error: 'NOT_CREATED' });
         }
+    }).catch(err => {
+        res.json({ error: 'NOT_CREATED'});
     });
 });
 
 router.get('/api/users/lists/:id/items', function(req, res) {
-    const _id = req.params.id;
+    const where = {
+        listId: req.params.id
+    }
 
-    List.findOne({ _id }).populate('items').exec(function(err, doc) {
-        if (err) {
-            res.send('');
+    db.item.findAll({ where }).then(items => {
+        if (items) {
+            res.json(items);
         } else {
-            res.send(doc.items);
+            res.json({ error: 'NOT_FOUND '});
         }
+    }).catch(err => {
+        res.json({ error: 'NOT_FOUND' });
     });
 });
 
 router.get('/api/users/lists/items/:id', function(req, res) {
-    const _id = req.params.id;
+    const where = {
+        id: req.params.id
+    }
 
-    ListItem.findOne({ _id }).exec(function(err, doc) {
-        if (err) {
-            res.send('');
+    db.item.findOne({ where }).then(item => {
+        if (item) {
+            res.json(item);
         } else {
-            res.send(doc);
+            res.json({ error: 'NOT_FOUND '});
         }
+    }).catch(err => {
+        res.json({ error: 'NOT_FOUND' });
     });
 });
 
 router.put('/api/users/lists/items/:id', function(req, res) {
-    const _id = req.params.id;
+    const where = {
+        id: req.params.id
+    }
 
-    ListItem.findByIdAndUpdate({ _id }, { $set: req.body }, function(err, doc) {
-        if (err) {
-            res.send('');
+    db.item.update(req.body, { where }).then(item => {
+        if (item) {
+            res.json(item);
         } else {
-            res.send(doc);
+            res.json({ error: 'NOT_MODIFIED '});
         }
+    }).catch(err => {
+        res.json({ error: 'NOT_MODIFIED' });
     });
 });
 
 router.delete('/api/users/lists/:list_id/items/:item_id', function(req, res) {
-    const list_id = req.params.list_id;
-    const item_id = req.params.item_id;
+    const where = {
+        id: req.params.item_id
+    }
 
-    ListItem.findByIdAndRemove({ _id: item_id }, function(err) {
-        if (err) {
-            res.send('');
+    db.item.destroy({ where }).then(item => {
+        if (item) {
+            res.json(item);
         } else {
-            List.findOne({ _id: list_id }).populate('items').exec(function(err, list) {
-                if (err) {
-                    res.send('');
-                } else {
-                    const index = list.items.indexOf(item_id);
-                    if (index > -1) {
-                        list.items.splice(index, 1);
-                    }
-                    list.save();
-                    res.send(list.items);
-                }
-            });
+            res.json({ error: 'NOT_DESTROYED' });
         }
+    }).catch(err => {
+        res.json({ error: 'NOT_DESTROYED'});
     });
 });
 
