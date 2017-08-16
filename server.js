@@ -17,7 +17,7 @@ app.use(bodyParser.json({ type: "application/vnd.api+json" }));
 
 app.use("/", dbRoutes);
 
-db.sequelize.sync().then(function() {
+db.sequelize.sync({ force: true }).then(function() {
     app.listen(PORT, function () {
         console.log("App listening on port: " + PORT);
     });

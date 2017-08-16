@@ -9,11 +9,11 @@ module.exports = function(sequelize, DataTypes) {
             defaultValue: 0
         },
         description: {
-            type: DataTypes.STRING,
+            type: DataTypes.TEXT,
             allowNull: true
         },
         image: {
-            type: DataTypes.STRING,
+            type: DataTypes.TEXT,
             allowNull: true
         }
     }, {
