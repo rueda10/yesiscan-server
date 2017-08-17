@@ -6,7 +6,10 @@ module.exports = function(sequelize, DataTypes) {
         },
         quantity: {
             type: DataTypes.INTEGER,
-            defaultValue: 0
+            defaultValue: 1,
+            validate: {
+                min: 0
+            }
         },
         description: {
             type: DataTypes.TEXT,
@@ -14,6 +17,10 @@ module.exports = function(sequelize, DataTypes) {
         },
         image: {
             type: DataTypes.TEXT,
+            allowNull: true
+        },
+        code: {
+            type: DataTypes.STRING,
             allowNull: true
         }
     }, {

@@ -202,14 +202,25 @@ router.get('/api/users/lists/items/:id', function(req, res) {
     });
 });
 
-router.put('/api/users/lists/items/:id', function(req, res) {
+router.put('/api/users/lists/:list_id/items/:item_id', function(req, res) {
     const where = {
-        id: req.params.id
+        id: req.params.item_id
     }
 
     db.item.update(req.body, { where }).then(item => {
         if (item) {
-            res.json(item);
+            const where = {
+                listId: req.params.list_id
+            }
+            db.item.findAll({ where }).then(lists => {
+                if (lists) {
+                    res.json(lists);
+                } else {
+                    res.json({ error: 'NOT_FOUND '});
+                }
+            }).catch(err => {
+                res.json({ error: 'NOT_FOUND' });
+            });
         } else {
             res.json({ error: 'NOT_MODIFIED '});
         }
