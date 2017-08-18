@@ -3,7 +3,8 @@ module.exports = function(sequelize, DataTypes) {
         name: {
             type: DataTypes.STRING,
             unique: true,
-            allowNull: false
+            allowNull: false,
+            validate: { min: 1 }
         }
     }, {
         classMethods: {
