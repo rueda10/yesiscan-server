@@ -26,11 +26,7 @@ module.exports = function(sequelize, DataTypes) {
     }, {
         classMethods: {
             associate: function(models) {
-                Item.belongsTo(models.list, {
-                    foreignKey: {
-                        allowNull: false
-                    }
-                });
+                Item.belongsTo(models.list);
             }
         }
     });

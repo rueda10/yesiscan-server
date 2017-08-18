@@ -155,13 +155,21 @@ router.delete('/api/users/:user_id/lists/:list_id', function(req, res) {
 //  ******************************/
 router.post('/api/users/lists/:id/items', function(req, res) {
     const listId = req.params.id;
-    if (listId) {
-        req.body.listId = listId;
-    }
 
     db.item.create(req.body).then(item => {
         if (item) {
-            res.json(item);
+            const where = {
+                listId
+            }
+            db.item.findAll({ where }).then(items => {
+                if (items) {
+                    res.json(items);
+                } else {
+                    res.json({ error: 'NOT_FOUND' });
+                }
+            }).catch(err => {
+                res.json({ error: 'NOT_FOUND' });
+            });
         } else {
             res.json({ error: 'NOT_CREATED' });
         }
@@ -236,7 +244,18 @@ router.delete('/api/users/lists/:list_id/items/:item_id', function(req, res) {
 
     db.item.destroy({ where }).then(item => {
         if (item) {
-            res.json(item);
+            const where = {
+                listId: req.params.list_id
+            }
+            db.item.findAll({ where }).then(items => {
+                if (items) {
+                    res.json(items);
+                } else {
+                    res.json({ error: 'NOT_FOUND '});
+                }
+            }).catch(err => {
+                res.json({ error: 'NOT_FOUND' });
+            });
         } else {
             res.json({ error: 'NOT_DESTROYED' });
         }
